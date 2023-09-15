@@ -5,7 +5,9 @@ import Loader from "./Loader";
 import Error from "./Error";
 import StartScreen from "./StartScreen";
 import Question from "./Question";
+import NextQuestion from "./NextQuestion";
 
+//reducerda yer alan initialState
 const initialState = {
   questions: [],
 
@@ -13,30 +15,49 @@ const initialState = {
   status: "loading",
   index: 0,
   answer: null,
+  points: 0,
 };
 
 const reducer = (state, action) => {
   switch (action.type) {
+    //datayı aldığımız yer
     case "dataRecevied":
       return {
         ...state,
         questions: action.payload,
         status: "ready",
       };
+    //dataya ulaşamadığımız durumda
     case "dataFailed":
       return {
         ...state,
         status: "error",
       };
+    //soruları görüntülediğimiz yer
     case "start":
       return {
         ...state,
         status: "active",
       };
+    //cevapları görüntülediğimiz kısım
     case "newAnswer":
+      // burada reducerın questionsdan bilgisi olmadığı için öncelikle var olan indexi alıyoruz.
+      const question = state.questions.at(state.index);
       return {
         ...state,
         answer: action.payload,
+        // ve burda eğer payload durumu correctOption ile aynıysa mevcut state duruma puanunu ekliyoruz. yoksa point olduğu yerde kalıyor.
+        points:
+          action.payload === question.correctOption
+            ? state.points + question.points
+            : state.points,
+      };
+    case "nextQuestion":
+      return {
+        ...state,
+        index: state.index + 1,
+        //diğer soruya geçerken cevabı sıfırlamak için
+        answer: null,
       };
     default:
       throw new Error("Unknown action");
@@ -73,11 +94,14 @@ function App() {
           <StartScreen numQuestions={numQuestions} dispatch={dispatch} />
         )}
         {status === "active" && (
-          <Question
-            question={questions[index]}
-            answer={answer}
-            dispatch={dispatch}
-          />
+          <>
+            <Question
+              question={questions[index]}
+              answer={answer}
+              dispatch={dispatch}
+            />
+            <NextQuestion dispach={dispatch} answer={answer} />
+          </>
         )}
       </Main>
     </div>
